@@ -602,43 +602,68 @@ async function fetchProducts() {
         }
 
         // Cart Management
+        
         function addToCart(id) {
-            const product = allProducts.find(p => (p.ID || allProducts.indexOf(p)) == id);
-            if (!product) return;
+    const product = allProducts.find(p => (p.ID || allProducts.indexOf(p)) == id);
+    if (!product) return;
 
-            const finalPrice = parseFloat(product.PROMOPRICE || product.PRICE || 0);
-            const existingItem = cart.find(item => item.id == id);
+    const stock = parseInt(product.STOCK || 0);
+    if (stock <= 0) {
+        alert("Lo sentimos, este producto está agotado.");
+        return;
+    }
 
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({
-                    id: id,
-                    name: product.PRODUCT || 'Prenda',
-                    brand: product.BRAND || 'Seda',
-                    size: product.SIZE || 'Única',
-                    price: finalPrice,
-                    image: product.IMAGE1 || 'https://placehold.co/200x200/d4bbe2/543965?text=Seda',
-                    quantity: 1
-                });
-            }
+    const finalPrice = parseFloat(product.PROMOPRICE || product.PRICE || 0);
+    const existingItem = cart.find(item => item.id == id);
 
-            saveCartToStorage();
-            updateCartUI();
-            toggleCart(); // Open cart drawer to show addition
-        }
+    const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+
+    // Condición: Validar si al sumar 1 más se supera el stock disponible
+    if (currentQtyInCart + 1 > stock) {
+        alert(`No puedes agregar más unidades. Solo tenemos ${stock} disponible(s) en stock.`);
+        return;
+    }
+
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            id: id,
+            name: product.PRODUCT || 'Prenda',
+            brand: product.BRAND || 'Seda',
+            size: product.SIZE || 'Única',
+            price: finalPrice,
+            image: product.IMAGE1 || 'https://placehold.co/200x200/d4bbe2/543965?text=Seda',
+            quantity: 1
+        });
+    }
+
+    saveCartToStorage();
+    updateCartUI();
+    toggleCart(); 
+}
 
         function updateQuantity(id, delta) {
-            const item = cart.find(i => i.id == id);
-            if (item) {
-                item.quantity += delta;
-                if (item.quantity <= 0) {
-                    cart = cart.filter(i => i.id != id);
-                }
-            }
-            saveCartToStorage();
-            updateCartUI();
-        }
+    const item = cart.find(i => i.id == id);
+    if (!item) return;
+
+    // Buscar el producto original para conocer el stock real
+    const product = allProducts.find(p => (p.ID || allProducts.indexOf(p)) == id);
+    const stock = product ? parseInt(product.STOCK || 0) : 999;
+
+    if (delta > 0 && item.quantity + delta > stock) {
+        alert(`Alcanzaste el límite máximo de stock disponible (${stock} unidades).`);
+        return;
+    }
+
+    item.quantity += delta;
+    if (item.quantity <= 0) {
+        cart = cart.filter(i => i.id != id);
+    }
+
+    saveCartToStorage();
+    updateCartUI();
+}
 
         function updateCartUI() {
             const container = document.getElementById('cart-items-container');
