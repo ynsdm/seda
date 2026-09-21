@@ -394,19 +394,22 @@
 
 async function fetchProducts() {
   const loadingEl = document.getElementById('loading-container');
-  const container = document.getElementById('products-container');
+  const errorEl = document.getElementById('error-container');
+  const gridEl = document.getElementById('products-grid');
   
   try {
     const response = await fetch(SHEET_API_URL);
+    if (!response.ok) throw new Error("Error en la respuesta de la red");
+    
     const data = await response.json();
     
     if (!data || data.length === 0) {
-      container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">No hay productos disponibles en este momento.</p>';
       if(loadingEl) loadingEl.style.display = 'none';
+      gridEl.innerHTML = '<div class="col-span-full text-center py-16 text-seda-500 text-sm">No hay productos disponibles en este momento.</div>';
       return;
     }
     
-    // Limpiar comillas accidentales en las URLs de las imágenes si el usuario las puso
+    // Limpiar comillas accidentales en las URLs de las imágenes
     allProducts = data.map(p => ({
       ...p,
       IMAGE1: p.IMAGE1 ? String(p.IMAGE1).replace(/^["']|["']$/g, '').trim() : '',
@@ -414,12 +417,12 @@ async function fetchProducts() {
       IMAGE3: p.IMAGE3 ? String(p.IMAGE3).replace(/^["']|["']$/g, '').trim() : ''
     }));
 
-    renderProducts(allProducts);
     if(loadingEl) loadingEl.style.display = 'none';
+    renderProducts(allProducts);
   } catch (error) {
     console.error("Error al cargar productos:", error);
-    container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">Error al conectar con la base de datos.</p>';
     if(loadingEl) loadingEl.style.display = 'none';
+    if(errorEl) errorEl.classList.remove('hidden');
   }
 }
         // Demo fallback data matching the delicate Seda theme & columns
