@@ -379,7 +379,7 @@
     <!-- JavaScript Application Logic -->
     <script>
         // Apps Script Database URL
-        const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwI4eU0LPkL5yYDtXKNdxMM74AgxZZ2GuGxvRrre3XDF0DOCFldosUOIcrx7Sa2TkOr";
+        const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwI4eU0LPkL5yYDtXKNdxMM74AgxZZ2GuGxvRrre3XDF0DOCFldosUOIcrx7Sa2TkOr/exec";
 
         let allProducts = [];
         let cart = [];
@@ -392,41 +392,30 @@
             loadCartFromStorage();
         };
 
-        async function fetchProducts() {
-            const loadingEl = document.getElementById('loading-container');
-            const errorEl = document.getElementById('error-container');
-            const gridEl = document.getElementById('products-grid');
-
-            loadingEl.classList.remove('hidden');
-            errorEl.classList.add('hidden');
-            gridEl.innerHTML = '';
-
-            try {
-                // Using cors or standard fetch
-                const response = await fetch(SHEET_API_URL);
-                if (!response.ok) throw new Error('Error al conectar con Google Sheets');
-                
-                const data = await response.json();
-                // Expecting array of objects: ID, PRODUCT, BRAND, SIZE, PRICE, STOCK, PROMOPRICE, IMAGE1, IMAGE2, IMAGE3
-                allProducts = Array.isArray(data) ? data : (data.products || data.data || []);
-
-                loadingEl.classList.add('hidden');
-
-                if (allProducts.length === 0) {
-                    errorEl.classList.remove('hidden');
-                    document.getElementById('error-message').innerText = "La base de datos no devolvió productos activos.";
-                    return;
-                }
-
-                renderProducts(allProducts);
-            } catch (err) {
-                console.warn("Fallo fetch directo, usando datos demo elegantes si es necesario o mostrando error", err);
-                // Fallback demo data if offline or CORS block for seamless user testing
-                allProducts = getDemoProducts();
-                loadingEl.classList.add('hidden');
-                renderProducts(allProducts);
-            }
-        }
+async function fetchProducts() {
+  const loadingEl = document.getElementById('loading-container');
+  const container = document.getElementById('products-container');
+  
+  try {
+    const response = await fetch(SHEET_API_URL);
+    const data = await response.json();
+    
+    // Si la hoja no tiene productos o data está vacío
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">No hay productos disponibles en este momento.</p>';
+      loadingEl.style.display = 'none';
+      return;
+    }
+    
+    allProducts = data;
+    renderProducts(allProducts);
+    loadingEl.style.display = 'none';
+  } catch (error) {
+    console.error("Error al cargar productos:", error);
+    container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">Error al cargar la tienda. Intente de nuevo más tarde.</p>';
+    loadingEl.style.display = 'none';
+  }
+}
 
         // Demo fallback data matching the delicate Seda theme & columns
         function getDemoProducts() {
