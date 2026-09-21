@@ -400,23 +400,28 @@ async function fetchProducts() {
     const response = await fetch(SHEET_API_URL);
     const data = await response.json();
     
-    // Si la hoja no tiene productos o data está vacío
     if (!data || data.length === 0) {
       container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">No hay productos disponibles en este momento.</p>';
-      loadingEl.style.display = 'none';
+      if(loadingEl) loadingEl.style.display = 'none';
       return;
     }
     
-    allProducts = data;
+    // Limpiar comillas accidentales en las URLs de las imágenes si el usuario las puso
+    allProducts = data.map(p => ({
+      ...p,
+      IMAGE1: p.IMAGE1 ? String(p.IMAGE1).replace(/^["']|["']$/g, '').trim() : '',
+      IMAGE2: p.IMAGE2 ? String(p.IMAGE2).replace(/^["']|["']$/g, '').trim() : '',
+      IMAGE3: p.IMAGE3 ? String(p.IMAGE3).replace(/^["']|["']$/g, '').trim() : ''
+    }));
+
     renderProducts(allProducts);
-    loadingEl.style.display = 'none';
+    if(loadingEl) loadingEl.style.display = 'none';
   } catch (error) {
     console.error("Error al cargar productos:", error);
-    container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">Error al cargar la tienda. Intente de nuevo más tarde.</p>';
-    loadingEl.style.display = 'none';
+    container.innerHTML = '<p style="text-align:center; width:100%; color:#8c78a5; padding:40px;">Error al conectar con la base de datos.</p>';
+    if(loadingEl) loadingEl.style.display = 'none';
   }
 }
-
         // Demo fallback data matching the delicate Seda theme & columns
         function getDemoProducts() {
             return [
